@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Application Form</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        .file-list {
+            margin-top: 10px;
+        }
+        .file-actions .btn {
+            margin-right: 10px;
+        }
+        .modal-body img, .modal-body iframe {
+            max-width: 100%;
+            max-height: 80vh;
+        }
+        .sticky-progress {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background-color: white;
+            padding: 10px 0;
+        }
+        /* Custom modal styles */
+        .custom-modal {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding-top: 60px;
+        }
+        .custom-modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 6px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 10px;
+            max-height: 80vh;
+            overflow-y: hidden; /* Initially hidden */
+        }
+        .custom-modal-content.pdfViewer {
+            overflow-y: auto; /* Enable scroll for PDF files */
+        }
+        .pdfViewer canvas {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+        }
+        .imageViewer img {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+    <!-- PDF.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.5.207/pdf_viewer.css" />
+</head>
+<body>
+<div class="container mt-5">
+    <div class="sticky-progress">
+        <div class="progress">
+            <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+    </div>
+    <br>
+    <h2>Зээлийн хүсэлт илгээх маягт</h2>
+    <span>Loan Application Form v3</span>
+    <br>
+    <br>
+    <!-- Notification Area -->
+    <div id="notification" class="alert d-none notification" role="alert"></div>
+
+    <form id="loanForm" novalidate>
+        <!-- Form Fields -->
+        <fieldset class="mb-3">
+            <legend>Ерөнхий мэдээлэл</legend>
+            <div class="row mb-3">
+                <label class="form-label">Та өмнө нь манайхаас зээл авч байсан уу?</label>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="previousLoan" id="previousLoanYes" value="yes" required>
+                        <label class="form-check-label" for="previousLoanYes">Тийм</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="previousLoan" id="previousLoanNo" value="no" required>
+                        <label class="form-check-label" for="previousLoanNo">Үгүй</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="form-label">Та манай валют арилжааны үйлчилгээгээр үйлчлүүлдэг үү?</label>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="forexService" id="forexServiceYes" value="yes" required>
+                        <label class="form-check-label" for="forexServiceYes">Тийм</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="forexService" id="forexServiceNo" value="no" required>
+                        <label class="form-check-label" for="forexServiceNo">Үгүй</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label for="loanType" class="form-label">Та зээлийн төрлөө сонгоно уу?</label>
+                <div class="col-md-6">
+                    <select id="loanType" class="form-select" required>
+                        <option value="">Сонгох</option>
+                        <option value="usdLoan">Долларын зээл</option>
+                        <option value="mntLoan">Төгрөгийн зээл</option>
+                        <option value="carLoan">Автомашины зээл</option>
+                    </select>
+                    <div class="form-text">Зээлийн төрлөө сонгоно уу.</div>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Хувийн мэдээлэл</legend>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="lastName" class="form-label">Овог</label>
+                    <input type="text" class="form-control" id="lastName" placeholder="Таны овог" pattern="[А-Яа-яӨөҮү]+" title="Зөвхөн крилл үсгээр бичнэ үү." required>
+                    <div class="form-text">Зөвхөн крилл үсгээр бичнэ үү.</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="firstName" class="form-label">Нэр</label>
+                    <input type="text" class="form-control" id="firstName" placeholder="Таны нэр" pattern="[А-Яа-яӨөҮү]+" title="Зөвхөн крилл үсгээр бичнэ үү." required>
+                    <div class="form-text">Зөвхөн крилл үсгээр бичнэ үү.</div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="phoneNumber" class="form-label">Утасны дугаар</label>
+                    <input type="tel" class="form-control" id="phoneNumber" placeholder="Таны утасны дугаар" pattern="^\d{8,10}$" title="Зөвхөн тоо оруулна уу. MN: 99009900, AU: 0400500400" required>
+                    <div class="form-text">Жишээ нь, Хэрвээ Монгол дугаар бол 99009900, Австрали дугаар бол 0400500400 гэх мэт</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="email" class="form-label">Имэйл хаяг</label>
+                    <input type="email" class="form-control" id="email" placeholder="Таны имэйл хаяг, youremail@email.com" required>
+                    <div class="form-text">Имэйлээр мэдээлэл очих, мөн тантай холбогдох тул тогтмол ашигладаг имэйлээ оруулна уу.</div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="homeAddress" class="form-label">Гэрийн хаяг</label>
+                    <input type="text" class="form-control" id="homeAddress" placeholder="Гэрийн хаяг" required>
+                    <div class="form-text">Та хаягаа бүтнээр нь оруулна уу. Жишээ нь Unit 808, 100 Market Street Rhodes Sydney</div>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Визний мэдээлэл</legend>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="visaType" class="form-label">Визний төрөл</label>
+                    <select id="visaType" class="form-select" required>
+                        <option value="">Сонгох</option>
+                        <option value="subclass500">Subclass 500</option>
+                        <option value="subclass408">Subclass 408</option>
+                        <option value="subclass485">Subclass 485</option>
+                        <option value="subclass866">Subclass 866</option>
+                        <option value="subclass482">Subclass 482/494</option>
+                        <option value="subclass417">Subclass 417</option>
+                        <option value="subclass462">Subclass 462</option>
+                        <option value="other">Бусад</option>
+                    </select>
+                    <div class="form-text">Визний төрлөө сонгоно уу.</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="visaExpiry" class="form-label">Таны визний дуусах огноо</label>
+                    <input type="date" class="form-control" id="visaExpiry" required>
+                    <div class="form-text">Визний дуусах огноогоо оруулна уу.</div>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Пасспортын мэдээлэл</legend>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="passportImages" class="form-label">Гадаад пасспортын зураг</label>
+                    <input type="file" class="form-control" id="passportImages" accept=".jpg, .png, .heic" multiple required>
+                    <div class="form-text">Пасспорт дээрх мэдээлэл, зураг тод харагдахуйц байх, мөн гарын үсэгтэй хуудас нь байх, (jpg, png, heic, 3MB хүртэл)</div>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Файлын нэр</th>
+                                <th>Хэмжээ</th>
+                                <th>Үйлдэл</th>
+                            </tr>
+                        </thead>
+                        <tbody id="passportImagesList" class="file-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Хамааралтай хүний мэдээлэл</legend>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="relativeRelation" class="form-label">Таны хэн болох</label>
+                    <select id="relativeRelation" class="form-select" required>
+                        <option value="">Сонгох</option>
+                        <option value="spouse">Нөхөр/Эхнэр</option>
+                        <option value="parent">Эцэг/Эх</option>
+                        <option value="sibling">Ах/Эгч</option>
+                        <option value="partner">Найз охин/Найз залуу</option>
+                        <option value="friend">Найз</option>
+                        <option value="other">Бусад</option>
+                    </select>
+                    <div class="form-text">Таны хэн болох, эсвэл ямар хамааралтай эсэх.</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="relativeName" class="form-label">Овог, Нэр</label>
+                    <input type="text" class="form-control" id="relativeName" placeholder="Овог Нэр бичих" required>
+                    <div class="form-text">Овог болон нэрийг нь бүтнээр, крилл үсгээр оруулна уу.</div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="relativeId" class="form-label">Регистрийн дугаар</label>
+                    <input type="text" class="form-control" id="relativeId" placeholder="Регистрийн дугаар" required>
+                    <div class="form-text">Хамааралтай хүний регистрийн дугаарыг нь оруулна уу.</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="relativePhoneNumber" class="form-label">Утасны дугаар</label>
+                    <input type="tel" class="form-control" id="relativePhoneNumber" placeholder="Утасны дугаар" pattern="^\d{8,10}$" title="Зөвхөн тоо оруулна уу. MN: 99009900, AU: 0400500400" required>
+                    <div class="form-text">Жишээ нь, Хэрвээ Монгол дугаар бол 99009900, Австрали дугаар бол 0400500400 гэх мэт</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="relativeEmail" class="form-label">Имэйл хаяг</label>
+                    <input type="email" class="form-control" id="relativeEmail" placeholder="Имэйл хаяг, email@email.com" required>
+                    <div class="form-text">Хамааралтай хүний имэйл хаягийг оруулна уу.</div>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Зээлийн мэдээлэл</legend>
+            <div class="row mb-3">
+                <div class="col-md-6" id="usdLoanAmountField" style="display: none;">
+                    <label for="usdLoanAmount" class="form-label">Зээлийн дүн (AUD)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="text" class="form-control" id="usdLoanAmount" placeholder="Зээлийн дүн" required>
+                    </div>
+                    <div class="form-text">Хамгийн багадаа $3000 болон түүнээс дээш дүн зөвхөн тоогоор оруулна уу.</div>
+                </div>
+                <div class="col-md-6" id="mntLoanAmountField" style="display: none;">
+                    <label for="mntLoanAmount" class="form-label">Зээлийн дүн (MNT)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₮</span>
+                        <input type="number" class="form-control" id="mntLoanAmount" placeholder="Зээлийн дүн" required>
+                    </div>
+                    <div class="form-text">Зээлийн дүнгээ оруулна уу.</div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="loanTerm" class="form-label">Зээлийн хугацаа (сар)</label>
+                    <input type="number" class="form-control" id="loanTerm" min="1" max="36" placeholder="Зээлийн хугацаа" required>
+                    <div class="form-text">Зээлийн хугацааг оруулна уу (1-ээс 36 сар хүртэлх).</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="loanPurpose" class="form-label">Зээлийн зориулалт</label>
+                    <select id="loanPurpose" class="form-select" required>
+                        <option value="">Сонгох</option>
+                        <option value="education">Сургалтын төлбөр</option>
+                        <option value="visa">Виз мэдүүлэх</option>
+                        <option value="car">Автомашин авах</option>
+                        <option value="travel">Аялах</option>
+                        <option value="insurance">Даатгал</option>
+                        <option value="home">Ахуйн хэрэгцээ (гэрээ тохижуулах болон бусад)</option>
+                        <option value="personal">Хувийн хэрэглээ</option>
+                        <option value="other">Бусад</option>
+                    </select>
+                    <div class="form-text">Зээлийн зориулалтаа сонгоно уу.</div>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Хавсралт файл</legend>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="bankStatement" class="form-label">Дансны хуулга</label>
+                    <input type="file" class="form-control" id="bankStatement" accept=".pdf" multiple required>
+                    <div class="form-text">Сүүлийн 6 сарын дансны хуулгаа оруулна уу. (Зөвхөн PDF, 3MB хүртэл)</div>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Файлын нэр</th>
+                                <th>Хэмжээ</th>
+                                <th>Үйлдэл</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bankStatementList" class="file-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Тодруулга</legend>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="additionalInfo" class="form-label">Нэмэлт мэдээлэл</label>
+                    <textarea class="form-control" id="additionalInfo" rows="3" placeholder="Нэмэлт мэдээлэл"></textarea>
+                    <div class="form-text">Хэрэв нэмэлт мэдээлэл байгаа бол энд бичнэ үү.</div>
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="row mb-3">
+            <div class="col-md-6 offset-md-6">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="confirm" required>
+                    <label class="form-check-label" for="confirm">Мэдээллээ үнэн зөв бөглөсөн гэдгээ баталж байна.</label>
+                </div>
+                <div class="form-check mt-2">
+                    <input type="checkbox" class="form-check-input" id="termsCheckbox" required>
+                    <label class="form-check-label" for="termsCheckbox">Би <a href="#" id="openTermsModal">үйлчилгээний нөхцөлийг</a> зөвшөөрч байна.</label>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6 offset-md-6">
+                <button id="submitBtn" type="submit" class="btn btn-primary">
+                    Илгээх
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                </button>
+                <button type="button" id="clearFormButton" class="btn btn-secondary">Дахин эхлэх</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Custom Modal for file preview -->
+<div id="filePreviewModal" class="custom-modal">
+    <div class="custom-modal-content" id="filePreviewContent"></div>
+</div>
+
+<!-- Custom Modal for terms and conditions -->
+<div id="termsModal" class="custom-modal">
+    <div class="custom-modal-content">
+        <h5 class="modal-title">Terms and Conditions</h5>
+        <p>Here are the terms and conditions...</p>
+    </div>
+</div>
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/js/bootstrap.min.js"></script>
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCJgoKo77HM5ennbXjU-wTSOFDgRaDug_Q&libraries=places"></script>
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.5.207/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.5.207/pdf.worker.min.js"></script>
+<!-- PDF.js viewer -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.5.207/pdf_viewer.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
